@@ -1,8 +1,8 @@
 # Implementation roadmap
 
-Implementation is active; see the execution record below. Model users, rooms, and messages, while displaying one shared room in the four slices below. Keep correctness and a minimal interface ahead of additional features.
+Implementation is complete; see the execution record below. The four slices model users, rooms, and messages while displaying one shared room. Correctness and a minimal interface take priority over additional features.
 
-## Existing repository
+## Repository at the planning baseline
 
 - Phoenix starter under `App` / `AppWeb`; `/` serves the welcome page. No chat schemas, migrations, context, LiveView, or Presence module exist.
 - Locked versions: Phoenix 1.8.14, LiveView 1.2.12, Ecto 3.14.2, Ecto SQL 3.14.0, Postgrex 0.22.4. Repo, PubSub, LiveView transport, and signed cookie sessions are configured.
@@ -140,16 +140,16 @@ Full-gate owner: primary agent. Local queue: not enrolled. PostgreSQL server: 17
 | 1 — Persistence | done | Context tests passed (2); full precommit passed (7 tests); new development database migrated and seed rerun successfully. |
 | 2 — Identity and roster | done | HTTP/session and multi-connection tests passed (2); precommit passed (8 total); assets built; browser blank-name, join, online status, and refresh checks passed. |
 | 3 — Ordered conversation | done | Three message/mount scenarios passed; precommit passed (11 total); browser multiline send persisted and displayed with sender/time. |
-| 4 — Scrolling and handoff | doing | Preplan below; checks pending. |
+| 4 — Scrolling and handoff | done | Recovery scenario passed; browser scrolling, narrow layout, validation, and actual transport reconnect passed. Setup, fresh test database, assets, precommit (12 tests), and strict Credo/ExSlop passed. |
 
-active_slice: 4 — Scrolling and handoff (doing).
+active_slice: none — all slices verified.
 next_candidate: none.
 
 Slice 1 preplan: implement the three schemas, generated migration, context, seed, and persistence scenarios described above. No UI or Presence changes in this slice. Use the installed Ecto UUIDv7 API and explicit UTC timestamp types. Verify with focused context tests, migration/seed checks, and `mix precommit`. Schema additions are additive; do not reset existing development data. Changed files and results will be recorded at closure.
 
-Last safe checkpoint: slice 3 verified. Dedicated `ahead_chat_dev` / `ahead_chat_test` databases avoid an existing unrelated `app_test.users` table; that database was not changed.
+Last safe checkpoint: all four slices verified. Dedicated `ahead_chat_dev` / `ahead_chat_test` databases avoid an existing unrelated `app_test.users` table; that database was not changed.
 Blockers: none.
-Next action: implement scroll anchoring, verify recovery in tests and the browser, and finish setup/architecture documentation.
+Next action: hand off the completed application and incremental history.
 
 Slice 2 preplan: build one ChatLive, the POST join handoff, Presence supervision, and a streamed roster using existing form components. No message composer/history or scroll hook yet. Verify a real HTTP session round trip, blank input, visitor roster updates, and two tracked connections with final abrupt termination; then run precommit and manually open the page. Baseline: `443775d`. Changes are reversible web-layer additions; preserve all persisted users.
 
@@ -160,3 +160,7 @@ Slice 3 preplan: add message history/composer and append-or-reload handling to C
 Slice 3 result: ChatLive now renders complete history and accepts messages with inline validation; in-order notifications append and lower/repeated IDs reset to database order. Added two message-flow scenarios and one mount-window scenario. The latter uses two real database connections and synchronous query telemetry to prove the new message was absent from the captured snapshot; a second mount verifies snapshot/event overlap. Only that test opts out of transaction rollback and explicitly cleans up its committed fixtures. No production test hooks or mocked delivery. All checks passed; no blockers or waivers.
 
 Slice 4 preplan: add one scroll hook, verify remount recovery after messages arrive while disconnected, write README/assumptions, and complete browser checks for scroll anchoring, transport recovery, and narrow screens. Baseline: `786ea09`. Verify the hook through the actual browser, run assets build and the full precommit gate, inspect the configured static checks, and exercise documented setup against a fresh isolated test database. Preserve existing data and the user's port 4000 server. Finish with a real commit and clean worktree.
+
+Slice 4 result: added a scroll hook, a missed-message remount scenario, and complete setup/architecture/assumption documentation. Browser verification caught and fixed two issues: template indentation affecting multiline text, and stream resets removing rows before element `beforeUpdate`. Scroll capture now runs at DOM patch start and restoration at patch end; the visible anchor moved less than one pixel during a late-ID reset. Initial bottom position and bottom-following passed; appends preserved older reading position. A narrow 355 CSS-pixel viewport had no horizontal overflow, with roster, composer, and blank-message feedback usable. The isolated preview endpoint was stopped while a message was committed: Presence emptied, the browser showed connection loss without the new message, then automatically reconnected with its identity and the missed message. A separate browser offline-emulation attempt was inconclusive after development live reload navigated to a browser error page; the endpoint restart supplied the actual transport-recovery verification. Temporary scroll fixtures were removed by their IDs; existing chat content was preserved.
+
+Final checks: `mix setup`, `mix assets.build`, `mix precommit` (12 tests), `mix credo --strict` (no issues), and all tests against a new `MIX_TEST_PARTITION=_roadmap_20260921` database passed. Static-check cleanup included shallow context control flow, aliases, concise module docs, and pattern-based assertions. No product scope additions, production test hooks, or join-race infrastructure were introduced. No outstanding implementation blockers or waivers.
