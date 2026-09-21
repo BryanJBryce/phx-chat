@@ -139,18 +139,22 @@ Full-gate owner: primary agent. Local queue: not enrolled. PostgreSQL server: 17
 | --- | --- | --- |
 | 1 — Persistence | done | Context tests passed (2); full precommit passed (7 tests); new development database migrated and seed rerun successfully. |
 | 2 — Identity and roster | done | HTTP/session and multi-connection tests passed (2); precommit passed (8 total); assets built; browser blank-name, join, online status, and refresh checks passed. |
-| 3 — Ordered conversation | planned | Depends on slice 2. |
+| 3 — Ordered conversation | done | Three message/mount scenarios passed; precommit passed (11 total); browser multiline send persisted and displayed with sender/time. |
 | 4 — Scrolling and handoff | planned | Depends on slice 3. |
 
-active_slice: none.
-next_candidate: 3 — Ordered conversation.
+active_slice: none — slice 3 verified.
+next_candidate: 4 — Scrolling and handoff.
 
 Slice 1 preplan: implement the three schemas, generated migration, context, seed, and persistence scenarios described above. No UI or Presence changes in this slice. Use the installed Ecto UUIDv7 API and explicit UTC timestamp types. Verify with focused context tests, migration/seed checks, and `mix precommit`. Schema additions are additive; do not reset existing development data. Changed files and results will be recorded at closure.
 
-Last safe checkpoint: slice 1 verified. Added schemas/context, migration, seed and two persistence scenarios; raised Ecto SQL minimum to 3.14. Dedicated `ahead_chat_dev` / `ahead_chat_test` databases avoid an existing unrelated `app_test.users` table; that database was not changed.
+Last safe checkpoint: slice 3 verified. Dedicated `ahead_chat_dev` / `ahead_chat_test` databases avoid an existing unrelated `app_test.users` table; that database was not changed.
 Blockers: none.
-Next action: commit slice 2, then implement slice 3 ordered conversation.
+Next action: implement scroll anchoring, verify recovery in tests and the browser, and finish setup/architecture documentation.
 
 Slice 2 preplan: build one ChatLive, the POST join handoff, Presence supervision, and a streamed roster using existing form components. No message composer/history or scroll hook yet. Verify a real HTTP session round trip, blank input, visitor roster updates, and two tracked connections with final abrupt termination; then run precommit and manually open the page. Baseline: `443775d`. Changes are reversible web-layer additions; preserve all persisted users.
 
 Slice 2 result: added ChatLive, join controller, Presence, router and minimal layout; replaced welcome-page test with two integration scenarios. Browser checks used a dedicated port 4001 server, now stopped; the existing port 4000 server was left alone. Explicit PORT support was added for local previews. No blockers or waivers.
+
+Slice 3 preplan: add message history/composer and append-or-reload handling to ChatLive. Keep scroll behavior for slice 4. Verify independent views, >50 rows, lower/repeated IDs, spoofed attributes, room isolation, and a real committed write after the initial SELECT using a test-only telemetry barrier. Baseline: `0dcf2ca`; existing data is preserved. Run focused tests and precommit, then smoke-test sending in the browser.
+
+Slice 3 result: ChatLive now renders complete history and accepts messages with inline validation; in-order notifications append and lower/repeated IDs reset to database order. Added two message-flow scenarios and one mount-window scenario. The latter uses two real database connections and synchronous query telemetry to prove the new message was absent from the captured snapshot; a second mount verifies snapshot/event overlap. Only that test opts out of transaction rollback and explicitly cleans up its committed fixtures. No production test hooks or mocked delivery. All checks passed; no blockers or waivers.
