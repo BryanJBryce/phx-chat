@@ -17,7 +17,8 @@ defmodule AppWeb.Router do
   scope "/", AppWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", ChatLive
+    post "/join", JoinController, :create
   end
 
   # Other scopes may use custom stacks.

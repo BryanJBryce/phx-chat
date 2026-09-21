@@ -1,0 +1,59 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="grid h-dvh min-h-0 grid-cols-[8rem_minmax(0,1fr)] sm:grid-cols-[14rem_minmax(0,1fr)]">
+    <aside
+      class="min-h-0 overflow-y-auto border-r border-base-300 bg-base-200/40 p-3 sm:p-5"
+      aria-label="People"
+    >
+      <h2 class="mb-4 text-sm font-semibold">People</h2>
+      <div id="users" phx-update="stream" class="space-y-4">
+        <p id="users-empty" class="hidden text-sm text-base-content/60 only:block">
+          No one has joined yet.
+        </p>
+        <div :for={{dom_id, user} <- @streams.users} id={dom_id} class="min-w-0">
+          <p class="break-words text-sm font-medium">{user.name}</p>
+          <p
+            class="mt-1 flex items-center gap-1.5 text-xs text-base-content/60"
+            data-status={if user.online?, do: "online", else: "offline"}
+          >
+            <span class={[
+              "size-1.5 shrink-0 rounded-full",
+              if(user.online?, do: "bg-emerald-600", else: "bg-base-content/30")
+            ]}></span>
+            {if user.online?, do: "Online", else: "Offline"}
+          </p>
+        </div>
+      </div>
+    </aside>
+    <section class="flex min-h-0 min-w-0 flex-col" aria-label="Chat">
+      <header class="flex min-h-16 items-center justify-between gap-3 border-b border-base-300 px-4 sm:px-6">
+        <h1 class="font-semibold">{@room.name}</h1>
+        <span :if={@current_user} id="current-user" class="truncate text-sm text-base-content/60">{@current_user.name}</span>
+      </header>
+      <div :if={!@current_user} class="flex flex-1 items-center justify-center p-4 sm:p-8">
+        <div class="w-full max-w-sm">
+          <.form
+            for={@join_form}
+            id="join-form"
+            action={~p"/join"}
+            method="post"
+            phx-change="validate_join"
+            phx-submit="join"
+            phx-trigger-action={@trigger_join}
+          >
+            <.input field={@join_form[:name]} label="Your name" autocomplete="nickname" />
+            <button
+              id="join-button"
+              type="submit"
+              class="mt-2 rounded-md bg-base-content px-4 py-2 text-sm font-medium text-base-100 disabled:opacity-50"
+              phx-disable-with="Joining…"
+            >Join chat</button>
+          </.form>
+          <p class="mt-4 text-xs leading-relaxed text-base-content/60">
+            Using an existing name joins as that person. No password is required.
+          </p>
+        </div>
+      </div>
+      <div :if={@current_user} id="joined-room" class="flex-1 p-4 sm:p-6"></div>
+    </section>
+  </div>
+</Layouts.app>
