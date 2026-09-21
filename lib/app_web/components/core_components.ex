@@ -230,11 +230,11 @@ defmodule AppWeb.CoreComponents do
             value="true"
             checked={@checked}
             class={@class || "checkbox checkbox-sm"}
-            {@rest}
+            {input_error_attributes(@id, @errors, @rest)}
           />{@label}
         </span>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.input_errors id={@id} errors={@errors} />
     </div>
     """
   end
@@ -249,13 +249,13 @@ defmodule AppWeb.CoreComponents do
           name={@name}
           class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
           multiple={@multiple}
-          {@rest}
+          {input_error_attributes(@id, @errors, @rest)}
         >
           <option :if={@prompt} value="">{@prompt}</option>
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.input_errors id={@id} errors={@errors} />
     </div>
     """
   end
@@ -272,10 +272,10 @@ defmodule AppWeb.CoreComponents do
             @class || "w-full textarea",
             @errors != [] && (@error_class || "textarea-error")
           ]}
-          {@rest}
+          {input_error_attributes(@id, @errors, @rest)}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.input_errors id={@id} errors={@errors} />
     </div>
     """
   end
@@ -295,21 +295,36 @@ defmodule AppWeb.CoreComponents do
             @class || "w-full input",
             @errors != [] && (@error_class || "input-error")
           ]}
-          {@rest}
+          {input_error_attributes(@id, @errors, @rest)}
         />
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <.input_errors id={@id} errors={@errors} />
     </div>
     """
   end
 
-  # Helper used by inputs to generate form errors
-  defp error(assigns) do
+  defp input_error_attributes(_id, [], rest), do: rest
+
+  defp input_error_attributes(id, _errors, rest) do
+    description =
+      [rest[:"aria-describedby"], id && "#{id}-errors"]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" ")
+
+    Map.merge(rest, %{"aria-invalid": "true", "aria-describedby": description})
+  end
+
+  attr :id, :string
+  attr :errors, :list, required: true
+
+  defp input_errors(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
-      {render_slot(@inner_block)}
-    </p>
+    <div :if={@errors != []} id={@id && "#{@id}-errors"} role="alert">
+      <p :for={msg <- @errors} class="mt-1.5 flex gap-2 items-center text-sm text-error">
+        <.icon name="hero-exclamation-circle" class="size-5" />
+        {msg}
+      </p>
+    </div>
     """
   end
 

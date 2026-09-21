@@ -2,6 +2,8 @@ defmodule App.Chat.Message do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias App.Chat.Input
+
   @primary_key {:id, Ecto.UUID, autogenerate: [version: 7]}
   @foreign_key_type :binary_id
 
@@ -14,9 +16,7 @@ defmodule App.Chat.Message do
 
   def changeset(message, attrs) do
     message
-    |> cast(attrs, [:body])
-    |> update_change(:body, &String.trim/1)
-    |> validate_required([:body])
+    |> Input.cast_text(attrs, :body)
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:room_id)
   end

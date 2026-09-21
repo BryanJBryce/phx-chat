@@ -2,6 +2,8 @@ defmodule App.Chat.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias App.Chat.Input
+
   @primary_key {:id, Ecto.UUID, autogenerate: [version: 7]}
 
   schema "users" do
@@ -13,9 +15,12 @@ defmodule App.Chat.User do
   def changeset(user, attrs) do
     changeset =
       user
-      |> cast(attrs, [:name])
-      |> update_change(:name, &String.trim/1)
-      |> validate_required([:name])
+      |> Input.cast_text(attrs, :name)
+      |> validate_length(:name,
+        max: 100,
+        count: :codepoints,
+        message: "must be at most %{count} characters"
+      )
 
     name = get_field(changeset, :name) || ""
 

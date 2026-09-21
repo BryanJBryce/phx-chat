@@ -35,6 +35,8 @@ defmodule AppWeb.ChatLive do
      |> assign(:trigger_join, false)
      |> assign(:message_form, to_form(Chat.change_message()))
      |> assign(:last_message_id, nil)
+     |> assign(:message_count, 0)
+     |> assign(:message_announcement, nil)
      |> stream(:messages, [])
      |> refresh_roster()
      |> load_messages()}
@@ -76,6 +78,14 @@ defmodule AppWeb.ChatLive do
     end
   end
 
+  def handle_event(event, _params, socket) when event in ["validate_join", "join"] do
+    handle_event(event, %{"user" => %{}}, socket)
+  end
+
+  def handle_event(event, _params, socket) when event in ["validate_message", "send_message"] do
+    handle_event(event, %{"message" => %{}}, socket)
+  end
+
   @impl true
   def handle_info(:users_changed, socket), do: {:noreply, refresh_roster(socket)}
 
@@ -87,19 +97,39 @@ defmodule AppWeb.ChatLive do
     do: {:noreply, socket}
 
   def handle_info({:message_created, message}, socket) do
-    cond do
-      message.room_id != socket.assigns.room.id ->
-        {:noreply, socket}
+    previous_count = socket.assigns.message_count
 
-      is_nil(socket.assigns.last_message_id) or message.id > socket.assigns.last_message_id ->
-        {:noreply,
-         socket
-         |> stream_insert(:messages, message)
-         |> assign(:last_message_id, message.id)}
+    socket =
+      if message.room_id == socket.assigns.room.id do
+        receive_message(socket, message)
+      else
+        socket
+      end
 
-      true ->
-        {:noreply, load_messages(socket)}
+    {:noreply, announce_messages(socket, socket.assigns.message_count - previous_count)}
+  end
+
+  defp receive_message(socket, message) do
+    if is_nil(socket.assigns.last_message_id) or message.id > socket.assigns.last_message_id do
+      socket
+      |> stream_insert(:messages, message)
+      |> assign(:last_message_id, message.id)
+      |> update(:message_count, &(&1 + 1))
+    else
+      load_messages(socket)
     end
+  end
+
+  defp announce_messages(socket, count) when count <= 0, do: socket
+
+  defp announce_messages(socket, count) do
+    text = if count == 1, do: "1 new message.", else: "#{count} new messages."
+    # The total makes consecutive one-message updates distinct to assistive tech.
+    assign(
+      socket,
+      :message_announcement,
+      "#{text} Total messages: #{socket.assigns.message_count}."
+    )
   end
 
   defp load_messages(%{assigns: %{current_user: nil}} = socket), do: socket
@@ -111,6 +141,7 @@ defmodule AppWeb.ChatLive do
     socket
     |> stream(:messages, messages, reset: true)
     |> assign(:last_message_id, last_message && last_message.id)
+    |> assign(:message_count, length(messages))
   end
 
   defp refresh_roster(socket) do

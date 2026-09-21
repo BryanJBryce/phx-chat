@@ -15,8 +15,16 @@ defmodule AppWeb.ChatIdentityTest do
   } do
     {:ok, visitor, _} = live(conn, ~p"/")
     assert has_element?(visitor, "#join-form")
+    refute has_element?(visitor, "#user_name[aria-invalid=true]")
     visitor |> form("#join-form", user: %{name: "  "}) |> render_submit()
     assert has_element?(visitor, "#join-form", "can't be blank")
+
+    assert has_element?(
+             visitor,
+             "#user_name[aria-invalid=true][aria-describedby=user_name-errors]"
+           )
+
+    assert has_element?(visitor, "#user_name-errors", "can't be blank")
 
     join_form = form(visitor, "#join-form", user: %{name: "  Alice  "})
     render_submit(join_form)

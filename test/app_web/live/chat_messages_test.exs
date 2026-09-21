@@ -21,6 +21,13 @@ defmodule AppWeb.ChatMessagesTest do
     assert message_ids(alice) == []
     assert message_ids(bob) == []
 
+    assert has_element?(
+             bob,
+             "#message-announcement[role=status][aria-live=polite][aria-atomic=true]"
+           )
+
+    assert announcement_text(bob) == ""
+
     alice |> form("#message-form", message: %{body: " \n "}) |> render_submit()
     assert has_element?(alice, "#message-form", "can't be blank")
     assert Chat.list_messages(room) == []
@@ -38,6 +45,7 @@ defmodule AppWeb.ChatMessagesTest do
     assert message_ids(bob) == [first.id]
     assert has_element?(bob, "#messages-#{first.id}", "Alice")
     assert has_element?(bob, "#messages-#{first.id} time[datetime]")
+    assert has_element?(bob, "#message-announcement", "1 new message. Total messages: 1.")
 
     render_submit(bob, "send_message", %{
       "message" => %{
@@ -57,6 +65,7 @@ defmodule AppWeb.ChatMessagesTest do
     assert message_ids(alice) == expected
     assert message_ids(bob) == expected
     assert has_element?(alice, "#messages-#{reply.id}", "Bob")
+    assert has_element?(alice, "#message-announcement", "1 new message. Total messages: 2.")
   end
 
   test "all history converges after late IDs and repeated events without leaking other rooms", %{
@@ -75,6 +84,7 @@ defmodule AppWeb.ChatMessagesTest do
     {:ok, second, _} = live(recycle(conn), ~p"/")
     assert message_ids(first) == expected
     assert message_ids(second) == expected
+    assert announcement_text(first) == ""
 
     late =
       Repo.insert!(%Message{
@@ -89,9 +99,11 @@ defmodule AppWeb.ChatMessagesTest do
     expected = [late.id | expected]
     assert message_ids(first) == expected
     assert message_ids(second) == expected
+    assert has_element?(first, "#message-announcement", "1 new message. Total messages: 61.")
     broadcast(room, late)
     assert message_ids(first) == expected
     assert message_ids(second) == expected
+    assert has_element?(first, "#message-announcement", "1 new message. Total messages: 61.")
 
     other_room = Repo.insert!(Room.changeset(%Room{}, %{name: "Other", slug: "other"}))
     {:ok, elsewhere} = Chat.create_message(other_room, user, %{body: "Private to another room"})
@@ -107,6 +119,7 @@ defmodule AppWeb.ChatMessagesTest do
 
     {:ok, fresh, _} = live(recycle(conn), ~p"/")
     assert message_ids(fresh) == expected
+    assert announcement_text(fresh) == ""
   end
 
   test "remount restores the session and messages committed while the view was gone", %{
@@ -151,5 +164,14 @@ defmodule AppWeb.ChatMessagesTest do
     |> LazyHTML.from_fragment()
     |> LazyHTML.query("#messages [data-message-id]")
     |> LazyHTML.attribute("data-message-id")
+  end
+
+  defp announcement_text(view) do
+    view
+    |> element("#message-announcement")
+    |> render()
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.text()
+    |> String.trim()
   end
 end
