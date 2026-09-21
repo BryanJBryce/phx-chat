@@ -50,6 +50,16 @@ LiveView tests do not execute JavaScript or simulate an actual network reconnect
 
 For the Safari presence regression, watch the roster from a separate tab, then join the same disposable identity in two private Safari tabs. Closing one must keep that identity Online; closing the last must leave it Offline without returning Online over the next 30 seconds. Also check refresh, navigating away/back, and reconnect after a transport failure: the open tab must recover its identity, history, and one Presence connection. This catches browser lifecycle behavior that terminating a LiveView in ExUnit cannot exercise.
 
+## Assumptions and development process
+
+This exercise intentionally has no authentication: entering an existing name selects that identity. The UI exposes one seeded shared room, loads its complete persisted history, and treats concurrent first-time joins with the same normalized name as an unsupported race that may require a retry. [ASSUMPTIONS.md](ASSUMPTIONS.md) records the complete identity, ordering, recovery, and scope assumptions. [ROADMAP.md](ROADMAP.md) records the implementation plan, decisions, and verification evidence.
+
+AI-assisted development used:
+
+- [Elixir Test Critic](https://github.com/iautom8things/elixir-test-critic) for focused test-quality review.
+- [Luna Swarm](https://github.com/BryanJBryce/luna-swarm) for parallel specialized reviews.
+- [Roadmap Development Loop](https://github.com/BryanJBryce/roadmap-development-loop) for incremental implementation and verification.
+
 ## Architecture
 
 `App.Chat` owns user/room/message persistence and successful-write notifications. The three schemas use UUIDv7 primary keys and UUID foreign keys. Postgres enforces unique normalized names, unique room slugs, and message references. `messages(room_id, id)` indexes the full ordered room query. The schema supports other rooms, while `/` always resolves the seeded `general` room server-side.
