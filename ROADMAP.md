@@ -137,16 +137,16 @@ Full-gate owner: primary agent. Local queue: not enrolled. PostgreSQL server: 17
 
 | Slice | Status | Evidence |
 | --- | --- | --- |
-| 1 — Persistence | doing | Preplan below; checks pending. |
+| 1 — Persistence | done | Context tests passed (2); full precommit passed (7 tests); new development database migrated and seed rerun successfully. |
 | 2 — Identity and roster | planned | Depends on slice 1. |
 | 3 — Ordered conversation | planned | Depends on slice 2. |
 | 4 — Scrolling and handoff | planned | Depends on slice 3. |
 
-active_slice: 1 — Persistence (doing).
+active_slice: none.
 next_candidate: 2 — Identity and roster.
 
 Slice 1 preplan: implement the three schemas, generated migration, context, seed, and persistence scenarios described above. No UI or Presence changes in this slice. Use the installed Ecto UUIDv7 API and explicit UTC timestamp types. Verify with focused context tests, migration/seed checks, and `mix precommit`. Schema additions are additive; do not reset existing development data. Changed files and results will be recorded at closure.
 
-Last safe checkpoint: approved plan committed at the baseline; no implementation yet.
+Last safe checkpoint: slice 1 verified. Added schemas/context, migration, seed and two persistence scenarios; raised Ecto SQL minimum to 3.14. Dedicated `ahead_chat_dev` / `ahead_chat_test` databases avoid an existing unrelated `app_test.users` table; that database was not changed.
 Blockers: none.
-Next action: implement slice 1 persistence and tests.
+Next action: commit slice 1, then begin slice 2 identity/roster work.
