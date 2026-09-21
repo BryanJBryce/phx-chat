@@ -48,6 +48,8 @@ The focused scenarios protect these failures:
 
 LiveView tests do not execute JavaScript or simulate an actual network reconnect. Browser verification covers multiline input/errors, initial bottom position, following messages only when at the bottom, preserving a visible message through appends and resets, transport reconnect, and a narrow viewport. Execution evidence is in [ROADMAP.md](ROADMAP.md).
 
+For the Safari presence regression, watch the roster from a separate tab, then join the same disposable identity in two private Safari tabs. Closing one must keep that identity Online; closing the last must leave it Offline without returning Online over the next 30 seconds. Also check refresh, navigating away/back, and reconnect after a transport failure: the open tab must recover its identity, history, and one Presence connection. This catches browser lifecycle behavior that terminating a LiveView in ExUnit cannot exercise.
+
 ## Architecture
 
 `App.Chat` owns user/room/message persistence and successful-write notifications. The three schemas use UUIDv7 primary keys and UUID foreign keys. Postgres enforces unique normalized names, unique room slugs, and message references. `messages(room_id, id)` indexes the full ordered room query. The schema supports other rooms, while `/` always resolves the seeded `general` room server-side.
@@ -55,6 +57,8 @@ LiveView tests do not execute JavaScript or simulate an actual network reconnect
 `AppWeb.ChatLive` renders the roster, join form, history, and composer using LiveView streams. Connected mounts subscribe before reading initial state. A CSRF-protected `POST /join` validates the name and writes the user ID into the signed Phoenix cookie session; each mount resolves that ID from Postgres. Message forms supply only the body. The LiveView supplies the selected user and room. Invalid input appears beside the form.
 
 `AppWeb.Presence` tracks only joined, connected LiveView processes, keyed by user UUID on the room's Presence topic. A user is Online while at least one metadata entry remains. Visitors subscribe but are not tracked. On each roster or presence notification, the view reads all persisted users and overlays current Presence; it never saves an online flag or treats one tab's departure as the whole user leaving. Network failures become Offline after the transport detects the loss and terminates the connection.
+
+The browser calls `LiveSocket.disconnect()` during capture-phase `pagehide`, before Phoenix Socket's own handler. This detaches LiveView's clean-close reload handler and cancels pending reload timers, preventing a closing Safari tab from reloading and briefly joining Presence again. Ordinary transport reconnect and browser back navigation remain handled by Phoenix.
 
 ### Ordering and the reload tradeoff
 

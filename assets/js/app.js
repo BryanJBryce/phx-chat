@@ -38,6 +38,10 @@ const liveSocket = new LiveSocket("/live", Socket, {
   },
 })
 
+// Detach LiveView's clean-close reload handler before Phoenix Socket handles
+// pagehide. Safari can otherwise reload a closing tab and briefly rejoin Presence.
+window.addEventListener("pagehide", () => liveSocket.disconnect(), {capture: true})
+
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
