@@ -1,6 +1,6 @@
 # Implementation roadmap
 
-Planning only: application implementation has not begun. Model users, rooms, and messages, while displaying one shared room in the four slices below. Keep correctness and a minimal interface ahead of additional features.
+Implementation is active; see the execution record below. Model users, rooms, and messages, while displaying one shared room in the four slices below. Keep correctness and a minimal interface ahead of additional features.
 
 ## Existing repository
 
@@ -105,7 +105,7 @@ Use a small hook in `assets/js/` to start at the bottom when history first mount
 
 **Work:** Add streamed room history, a multiline composer, sender/room enforcement, and blank-message feedback. Track `last_message_id` for the displayed room, append strictly larger incoming IDs, and reset from that room's complete ordered history otherwise. Deliver persisted-message events with senders preloaded to joined LiveViews in that room, including the sender. Clear the composer only after persistence succeeds.
 
-**Verify:** Use two independent LiveViews, starting empty, then a fresh mount with more than 50 persisted messages. Send through the UI and compare ordered message DOM IDs to the selected room's database history: cover larger-ID appends, a lower UUIDv7 committed after a higher one, repeated events through real PubSub, and a subsequent larger-ID message after a reset. Assert each persisted message appears once and messages/events from a second room never appear or disturb ordering. This catches truncation, arrival-order appends, stale append state, duplicates, and room leakage. Include blank submissions, an unjoined send attempt, and forged sender/room parameters; these must not create unauthorized/blank rows or override the selected user/room. Exercise a committed change during initial loading with a deterministic query barrier and independent writer, including an event already represented in the loaded snapshot. This catches missed updates and duplicate initial/live overlap without mocking the query or PubSub.
+**Verify:** Use two independent LiveViews, starting empty, then a fresh mount with more than 50 persisted messages. Send through the UI and compare ordered message DOM IDs to the selected room's database history: cover larger-ID appends, a lower UUIDv7 committed after a higher one, repeated events through real PubSub, and a subsequent larger-ID message after a reset. Assert each persisted message appears once and messages/events from a second room never appear or disturb ordering. This catches truncation, arrival-order appends, stale append state, duplicates, and room leakage. Include blank submissions, an unjoined send attempt, and forged sender/room parameters; these must not create unauthorized/blank rows or override the selected user/room. Pause connected mount after its history SELECT has captured a result, commit a message through an independent writer, then resume: the message must appear through its queued event even though absent from the initial snapshot. Separately cover an event already represented in the snapshot. This catches missed updates and duplicate initial/live overlap without mocking the query or PubSub.
 
 **Complete when:** All connected participants and a fresh mount converge to the same complete ID-ordered history, with validation failures leaving history unchanged.
 
@@ -115,7 +115,7 @@ Use a small hook in `assets/js/` to start at the bottom when history first mount
 
 **Work:** Add the scroll hook and minimal responsive layout. Replace the README with dependencies, Postgres configuration/setup, running the app, test commands, and a concise architecture explanation covering ordering, Presence, and the append-with-full-reload-fallback tradeoff. Complete `ASSUMPTIONS.md` from the decisions above; keep `ROADMAP.md` as the sole execution plan.
 
-**Verify:** Reconnect a participant after another user persisted a message while it was disconnected; verify the session identity, complete history, subsequent message delivery, and Presence registration recover. This catches reliance on transient PubSub state or stale append state. In a real browser, check initial bottom position, following while at bottom, and retaining an older visible message during both appends and fallback resets with late-ID insertion. LiveView tests do not execute the scrolling JavaScript. Also check multiline input, readable validation, and sidebar usability at narrow widths. Run the full precommit gate and follow the README from a clean test database.
+**Verify:** Terminate and remount a LiveView with the same signed session after another user persisted a message while it was disconnected; verify the session identity, complete history, subsequent message delivery, and Presence registration recover. This catches reliance on transient PubSub state or stale append state. In a real browser, also exercise a transport disconnect/reconnect and check initial bottom position, following while at bottom, and retaining an older visible message during both appends and fallback resets with late-ID insertion. LiveView tests do not execute the scrolling JavaScript. Also check multiline input, readable validation, and sidebar usability at narrow widths. Run the full precommit gate and follow the README from a clean test database.
 
 **Complete when:** Recovery and browser checks pass, setup instructions reproduce the app, the full gate passes, and the repository contains the application, README, assumptions, and truthful incremental commits.
 
@@ -127,3 +127,26 @@ Use a small hook in `assets/js/` to start at the bottom when history first mount
 - Recheck enrollment before implementation checks with `python3 ~/.codex/tools/db-test-slot/project.py --resolve`. If still unenrolled, use targeted `mix test` and final `mix precommit`; if enrolled, use the required queued equivalents. Keep one full-gate owner.
 - Verify the Postgres server version and development database setup at slice 1; recheck test connectivity then. No product decision is blocked on this; UUIDv7 is generated by Ecto. Record verified setup requirements in the README.
 - The authorized room scope is a multi-room-capable schema with one seeded room exposed in the UI. Exclude room switching/management, memberships, accounts/passwords, private chat, typing indicators, attachments, editing/deletion, receipts, notifications, search, custom sequencing, room GenServer, deployment work, and speculative scaling.
+
+
+## Execution record
+
+Roadmap revision: approved UUIDv7/rooms/append-or-reload design, with review clarifications above.
+Baseline: `e5eeb0e`, clean checkout; branch `codex/chat-roadmap`.
+Full-gate owner: primary agent. Local queue: not enrolled. PostgreSQL server: 17.6.
+
+| Slice | Status | Evidence |
+| --- | --- | --- |
+| 1 — Persistence | doing | Preplan below; checks pending. |
+| 2 — Identity and roster | planned | Depends on slice 1. |
+| 3 — Ordered conversation | planned | Depends on slice 2. |
+| 4 — Scrolling and handoff | planned | Depends on slice 3. |
+
+active_slice: 1 — Persistence (doing).
+next_candidate: 2 — Identity and roster.
+
+Slice 1 preplan: implement the three schemas, generated migration, context, seed, and persistence scenarios described above. No UI or Presence changes in this slice. Use the installed Ecto UUIDv7 API and explicit UTC timestamp types. Verify with focused context tests, migration/seed checks, and `mix precommit`. Schema additions are additive; do not reset existing development data. Changed files and results will be recorded at closure.
+
+Last safe checkpoint: approved plan committed at the baseline; no implementation yet.
+Blockers: none.
+Next action: implement slice 1 persistence and tests.
