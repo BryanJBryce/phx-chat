@@ -4,6 +4,7 @@ This is a web application written using the Phoenix web framework.
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
+- Do not use Ash Framework
 
 ### Phoenix v1.8 guidelines
 
@@ -37,12 +38,9 @@ custom classes must fully style the input
   - **Never write inline <script>custom js</script> tags within templates**
 
 ### UI/UX & design guidelines
-
-- **Produce world-class UI designs** with a focus on usability, aesthetics, and modern design principles
-- Implement **subtle micro-interactions** (e.g., button hover effects, and smooth transitions)
-- Ensure **clean typography, spacing, and layout balance** for a refined, premium look
-- Focus on **delightful details** like hover effects, loading states, and smooth page transitions
-
+- Keep the UI minimal and ShadCDN/Stripe-like in style, utilizing DaisyUI defaults
+- Clear and easy functionality
+- Dont' use flash messages for normal app behavior
 
 <!-- usage-rules-start -->
 
