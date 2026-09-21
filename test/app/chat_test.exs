@@ -59,7 +59,7 @@ defmodule App.ChatTest do
 
     assert {:error, changeset} = Chat.create_message(room, user, %{body: " \n\t "})
     assert %{body: ["can't be blank"]} = errors_on(changeset)
-    assert length(Chat.list_messages(room)) == 2
+    assert [_, _] = Chat.list_messages(room)
     refute_received {:message_created, _}
   end
 end

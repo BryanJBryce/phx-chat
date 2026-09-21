@@ -24,12 +24,18 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/app"
 import topbar from "../vendor/topbar"
+import ChatScroll from "./chat_scroll"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, ChatScroll},
+  // Stream resets remove rows before an element hook's beforeUpdate runs.
+  dom: {
+    onPatchStart: () => document.dispatchEvent(new Event("chat:before-patch")),
+    onPatchEnd: () => document.dispatchEvent(new Event("chat:after-patch")),
+  },
 })
 
 // Show progress bar on live navigation and form submits
@@ -80,4 +86,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-

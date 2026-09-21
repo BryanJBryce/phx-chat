@@ -37,15 +37,16 @@ defmodule App.Chat do
 
     with {:ok, candidate} <- Ecto.Changeset.apply_action(changeset, :insert) do
       case Repo.get_by(User, normalized_name: candidate.normalized_name) do
-        nil ->
-          with {:ok, user} <- Repo.insert(changeset) do
-            :ok = Phoenix.PubSub.broadcast(App.PubSub, users_topic(), :users_changed)
-            {:ok, user}
-          end
-
-        user ->
-          {:ok, user}
+        nil -> create_user(changeset)
+        user -> {:ok, user}
       end
+    end
+  end
+
+  defp create_user(changeset) do
+    with {:ok, user} <- Repo.insert(changeset) do
+      :ok = Phoenix.PubSub.broadcast(App.PubSub, users_topic(), :users_changed)
+      {:ok, user}
     end
   end
 

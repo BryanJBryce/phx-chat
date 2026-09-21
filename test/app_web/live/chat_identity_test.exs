@@ -34,7 +34,7 @@ defmodule AppWeb.ChatIdentityTest do
     invalid = post(build_conn(), ~p"/join", user: %{name: "\n\t"})
     document = invalid |> html_response(422) |> LazyHTML.from_document()
     assert document |> LazyHTML.query("#join-form") |> LazyHTML.text() =~ "can't be blank"
-    assert length(Chat.list_users()) == 1
+    assert [_user] = Chat.list_users()
   end
 
   test "visitors see all users and a user stays online until their last connection exits", %{
@@ -57,12 +57,12 @@ defmodule AppWeb.ChatIdentityTest do
 
     {:ok, second, _} = live(recycle(joined_conn), ~p"/")
     await_presence(user_id, :joins)
-    assert length(Presence.list(topic)[user_id].metas) == 2
+    assert [_, _] = Presence.list(topic)[user_id].metas
 
     stop_view(first, :shutdown)
     await_presence(user_id, :leaves)
     assert has_element?(visitor, "#users-#{user_id} [data-status=online]")
-    assert length(Presence.list(topic)[user_id].metas) == 1
+    assert [_] = Presence.list(topic)[user_id].metas
 
     stop_view(second, :kill)
     await_presence(user_id, :leaves)

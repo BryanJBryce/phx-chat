@@ -2,6 +2,7 @@ defmodule AppWeb.JoinController do
   use AppWeb, :controller
 
   alias App.Chat
+  alias Phoenix.LiveView.Controller
 
   def create(conn, params) do
     user_params = Map.get(params, "user", %{})
@@ -15,7 +16,7 @@ defmodule AppWeb.JoinController do
       {:error, changeset} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> Phoenix.LiveView.Controller.live_render(AppWeb.ChatLive,
+        |> Controller.live_render(AppWeb.ChatLive,
           session: %{"join_params" => user_params, "join_errors" => changeset.errors}
         )
     end

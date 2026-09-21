@@ -1,7 +1,6 @@
 defmodule AppWeb.Layouts do
   @moduledoc """
-  This module holds layouts and related functionality
-  used by your application.
+  Shared page framing and connection-error notices for the chat interface.
   """
   use AppWeb, :html
 

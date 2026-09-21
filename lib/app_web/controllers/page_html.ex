@@ -1,8 +1,6 @@
 defmodule AppWeb.PageHTML do
   @moduledoc """
-  This module contains pages rendered by PageController.
-
-  See the `page_html` directory for all templates available.
+  Starter templates retained for the generated PageController.
   """
   use AppWeb, :html
 

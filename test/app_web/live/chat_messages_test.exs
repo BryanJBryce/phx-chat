@@ -109,6 +109,34 @@ defmodule AppWeb.ChatMessagesTest do
     assert message_ids(fresh) == expected
   end
 
+  test "remount restores the session and messages committed while the view was gone", %{
+    room: room
+  } do
+    conn = post(build_conn(), ~p"/join", user: %{name: "Returning reader"})
+    user = Chat.get_user(get_session(conn, :user_id))
+    {:ok, before_disconnect} = Chat.create_message(room, user, %{body: "Already seen"})
+    {:ok, original, _} = live(recycle(conn), ~p"/")
+    assert message_ids(original) == [before_disconnect.id]
+    GenServer.stop(original.pid, :normal)
+
+    missed =
+      Repo.insert!(%Message{
+        id: "00000000-0000-7000-8000-000000000002",
+        room_id: room.id,
+        user_id: user.id,
+        body: "Earlier ID committed while disconnected"
+      })
+
+    {:ok, also_missed} = Chat.create_message(room, user, %{body: "Another missed notification"})
+    {:ok, restored, _} = live(recycle(conn), ~p"/")
+    expected = Enum.sort([missed.id, before_disconnect.id, also_missed.id])
+    assert has_element?(restored, "#current-user", user.name)
+    assert message_ids(restored) == expected
+
+    {:ok, after_reconnect} = Chat.create_message(room, user, %{body: "Live again"})
+    assert message_ids(restored) == Enum.sort([after_reconnect.id | expected])
+  end
+
   defp broadcast(room, message) do
     Phoenix.PubSub.broadcast(
       App.PubSub,
